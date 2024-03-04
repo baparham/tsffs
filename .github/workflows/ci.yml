@@ -55,7 +55,16 @@ jobs:
           Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -OutFile C:\ispm-installer.exe
           echo downloaded
           echo installing
-          C:\ispm-installer.exe /S /D='C:\ISPM\' | Out-Null
+          $processPath = "C:\ispm-installer.exe"
+          $arguments = "/S /D='C:\ISPM\'"
+          $timeoutSeconds = 180
+          try {
+              Start-Process -FilePath $processPath -ArgumentList $arguments -Wait -Passthru -Timeout $timeoutSeconds
+          }
+          catch {
+              Write-Warning "The process did not complete within the $timeoutSeconds seconds timeout period."
+              # Optional: Handle the timeout case, such as terminating the process or logging a message.
+          }
           echo done
 
       - name: Set SIMICS Install Directory
