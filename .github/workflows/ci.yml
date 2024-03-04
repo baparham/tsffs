@@ -78,7 +78,7 @@ jobs:
 
       - name: kill procmon
         if: ${{ always() }}
-        run: Procmon.exe /Terminate
+        run: Procmon.exe /Terminate | Out-null
 
       - name: save procmon log
         if: ${{ always() }}
