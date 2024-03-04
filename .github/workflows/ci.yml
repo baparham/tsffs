@@ -29,17 +29,10 @@ jobs:
         run: |
           Invoke-WebRequest -URI https://download.sysinternals.com/files/ProcessMonitor.zip -OutFile C:\ProcMon.zip
           Expand-Archive -Path "C:\ProcMon.zip" -DestinationPath "C:\procmon"
-          $procMonPath = "HKCU:\Software\Sysinternals\Process Monitor"
-          $eulaValue = Get-ItemProperty -Path $procMonPath -Name "EulaAccepted" -ErrorAction SilentlyContinue
-          if ($null -eq $eulaValue) {
-              New-Item -Path $procMonPath -Force | Out-Null
-              New-ItemProperty -Path $procMonPath -Name "EulaAccepted" -Value 1 -PropertyType "DWord" | Out-Null
-          } else {
-              Set-ItemProperty -Path $procMonPath -Name "EulaAccepted" -Value 1
-          }
+          Procmon.exe /AcceptEula
 
       - name: start procmon capture
-        run: Procmon.exe /Minimized /Quiet /BackingFile C:\log.pml
+        run: Procmon.exe /Minimized /Quiet /BackingFile C:\procmon\log.pml
 
       # ispm-installer.exe is a NSIS installer for the elctron build. We want the
       # default options, so we pass /S to install silently:
@@ -60,7 +53,7 @@ jobs:
           $proc = Start-Process -filePath $processPath -ArgumentList $arguments -PassThru
 
           # wait up to x seconds for normal termination
-          $proc | Wait-Process -Timeout 120 -ErrorAction SilentlyContinue -ErrorVariable timeouted
+          $proc | Wait-Process -Timeout 60 -ErrorAction SilentlyContinue -ErrorVariable timeouted
 
           if ($timeouted)
           {
@@ -78,14 +71,17 @@ jobs:
 
       - name: kill procmon
         if: ${{ always() }}
-        run: Procmon.exe /Terminate | Out-null
+        run: |
+          Procmon.exe /Terminate | Out-null
+          # maybe give the disk time to settle after saving procmon?
+          sleep 30
 
       - name: save procmon log
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
         with:
           name: procmon-log
-          path: C:\log.pml
+          path: C:\procmon\log.pml
 
   # build_windows_powershell:
   #   name: Build and Test (Windows)
