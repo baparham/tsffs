@@ -41,7 +41,7 @@ jobs:
       - name: Download and Install ISPM
         if: ${{ steps.cache-simics-packages-windows.outputs.cache-hit != 'true' }}
         run: |
-          Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -o C:\ispm-installer.exe
+          Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -OutFile C:\ispm-installer.exe
           C:\ispm-installer.exe /S /D='C:\ISPM\' | Out-Null
 
       - name: Set SIMICS Install Directory
