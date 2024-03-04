@@ -25,16 +25,15 @@ jobs:
           "$PATH" | Out-File -FilePath $env:GITHUB_PATH -Append
           echo "Current PATH: " $env:GITHUB_PATH
 
-      - name: download procmon and accept eula
+      - name: download procmon
         run: |
           Invoke-WebRequest -URI https://download.sysinternals.com/files/ProcessMonitor.zip -OutFile C:\ProcMon.zip
           Expand-Archive -Path "C:\ProcMon.zip" -DestinationPath "C:\procmon"
-          Procmon.exe /AcceptEula
 
       - name: start procmon capture
         run: |
-          Procmon.exe /Minimized /Quiet /BackingFile C:\procmon\log.pml
-          Procmon.exe /WaitForIdle
+          Procmon.exe /AcceptEula /Minimized /Quiet /BackingFile C:\procmon\log.pml
+          Procmon.exe /AcceptEula /WaitForIdle
 
       # ispm-installer.exe is a NSIS installer for the elctron build. We want the
       # default options, so we pass /S to install silently:
@@ -74,12 +73,12 @@ jobs:
       - name: kill procmon
         if: ${{ always() }}
         run: |
-          Procmon.exe /Terminate
+          Procmon.exe /AcceptEula /Terminate
           # from https://learn.microsoft.com/en-us/answers/questions/215348/when-running-using-procmon-terminate-log-is-corrup
           # to help ensure log file is closed properly
-          Procmon.exe /PagingFile /NoConnect /Minimized /Quiet
-          Procmon.exe /WaitForIdle
-          Procmon.exe /Terminate
+          Procmon.exe /AcceptEula /PagingFile /NoConnect /Minimized /Quiet
+          Procmon.exe /AcceptEula /WaitForIdle
+          Procmon.exe /AcceptEula /Terminate
 
       - name: save procmon log
         if: ${{ always() }}
