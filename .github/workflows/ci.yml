@@ -39,7 +39,7 @@ jobs:
           }
 
       - name: start procmon capture
-        run: Procmon.exe /Minimized /Quiet /BackingFile log.pml
+        run: Procmon.exe /Minimized /Quiet /BackingFile C:\log.pml
 
       # ispm-installer.exe is a NSIS installer for the elctron build. We want the
       # default options, so we pass /S to install silently:
@@ -60,7 +60,7 @@ jobs:
           $proc = Start-Process -filePath $processPath -ArgumentList $arguments -PassThru
 
           # wait up to x seconds for normal termination
-          $proc | Wait-Process -Timeout 180 -ErrorAction SilentlyContinue -ErrorVariable timeouted
+          $proc | Wait-Process -Timeout 120 -ErrorAction SilentlyContinue -ErrorVariable timeouted
 
           if ($timeouted)
           {
@@ -85,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: procmon-log
-          path: log.pml
+          path: C:\log.pml
 
   # build_windows_powershell:
   #   name: Build and Test (Windows)
