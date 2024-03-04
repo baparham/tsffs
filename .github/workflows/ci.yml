@@ -30,10 +30,10 @@ jobs:
           Invoke-WebRequest -URI https://download.sysinternals.com/files/ProcessMonitor.zip -OutFile C:\ProcMon.zip
           Expand-Archive -Path "C:\ProcMon.zip" -DestinationPath "C:\procmon"
 
-      - name: start procmon capture
-        run: |
-          Procmon.exe /AcceptEula /Minimized /Quiet /BackingFile C:\procmon\log.pml
-          Procmon.exe /AcceptEula /WaitForIdle
+      # - name: start procmon capture
+      #   run: |
+      #     Procmon.exe /AcceptEula /Minimized /Quiet /BackingFile C:\procmon\log.pml
+      #     Procmon.exe /AcceptEula /WaitForIdle
 
       # ispm-installer.exe is a NSIS installer for the elctron build. We want the
       # default options, so we pass /S to install silently:
@@ -47,6 +47,8 @@ jobs:
           echo downloading
           Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -OutFile C:\ispm-installer.exe
           echo downloaded
+          Procmon.exe /AcceptEula /Minimized /Quiet /BackingFile C:\procmon\log.pml
+          Procmon.exe /AcceptEula /WaitForIdle
           echo installing
           $processPath = "C:\ispm-installer.exe"
           $arguments = "/S /D='C:\ISPM\'"
@@ -65,21 +67,28 @@ jobs:
           }
           echo exit code $proc.ExitCode
           echo "done, timed out or failed"
-
-      - name: Set SIMICS Install Directory
-        run: |
-          ispm.exe settings install-dir C:\SIMICS\
-
-      - name: kill procmon
-        if: ${{ always() }}
-        run: |
           Procmon.exe /AcceptEula /Terminate
           # from https://learn.microsoft.com/en-us/answers/questions/215348/when-running-using-procmon-terminate-log-is-corrup
           # to help ensure log file is closed properly
           Procmon.exe /AcceptEula /PagingFile /NoConnect /Minimized /Quiet
           Procmon.exe /AcceptEula /WaitForIdle
           Procmon.exe /AcceptEula /Terminate
-          sleep 60
+
+
+      - name: Set SIMICS Install Directory
+        run: |
+          ispm.exe settings install-dir C:\SIMICS\
+
+      # - name: kill procmon
+      #   if: ${{ always() }}
+      #   run: |
+      #     Procmon.exe /AcceptEula /Terminate
+      #     # from https://learn.microsoft.com/en-us/answers/questions/215348/when-running-using-procmon-terminate-log-is-corrup
+      #     # to help ensure log file is closed properly
+      #     Procmon.exe /AcceptEula /PagingFile /NoConnect /Minimized /Quiet
+      #     Procmon.exe /AcceptEula /WaitForIdle
+      #     Procmon.exe /AcceptEula /Terminate
+      #     sleep 60
 
       - name: save procmon log
         if: ${{ always() }}
