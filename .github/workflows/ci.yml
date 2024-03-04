@@ -32,7 +32,9 @@ jobs:
           Procmon.exe /AcceptEula
 
       - name: start procmon capture
-        run: Procmon.exe /Minimized /Quiet /BackingFile C:\procmon\log.pml
+        run: |
+          Procmon.exe /Minimized /Quiet /BackingFile C:\procmon\log.pml
+          Procmon.exe /WaitForIdle
 
       # ispm-installer.exe is a NSIS installer for the elctron build. We want the
       # default options, so we pass /S to install silently:
@@ -72,9 +74,12 @@ jobs:
       - name: kill procmon
         if: ${{ always() }}
         run: |
-          Procmon.exe /Terminate | Out-null
-          # maybe give the disk time to settle after saving procmon?
-          sleep 30
+          Procmon.exe /Terminate
+          # from https://learn.microsoft.com/en-us/answers/questions/215348/when-running-using-procmon-terminate-log-is-corrup
+          # to help ensure log file is closed properly
+          Procmon.exe /PagingFile /NoConnect /Minimized /Quiet
+          Procmon.exe /WaitForIdle
+          Procmon.exe /Terminate
 
       - name: save procmon log
         if: ${{ always() }}
