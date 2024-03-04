@@ -27,7 +27,7 @@ jobs:
 
       - name: download procmon and accept eula
         run: |
-          Invoke-WebRequest -URI https://download.sysinternals.com/files/ProcessMonitor.zip -OutFile ProcMon.zip
+          Invoke-WebRequest -URI https://download.sysinternals.com/files/ProcessMonitor.zip -OutFile C:\ProcMon.zip
           Expand-Archive -Path "C:\ProcMon.zip" -DestinationPath "C:\procmon"
           $procMonPath = "HKCU:\Software\Sysinternals\Process Monitor"
           $eulaValue = Get-ItemProperty -Path $procMonPath -Name "EulaAccepted" -ErrorAction SilentlyContinue
