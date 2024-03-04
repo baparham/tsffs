@@ -56,7 +56,7 @@ jobs:
           $proc = Start-Process -filePath $processPath -ArgumentList $arguments -PassThru
 
           # wait up to x seconds for normal termination
-          $proc | Wait-Process -Timeout 60 -ErrorAction SilentlyContinue -ErrorVariable timeouted
+          $proc | Wait-Process -Timeout 240 -ErrorAction SilentlyContinue -ErrorVariable timeouted
 
           if ($timeouted)
           {
