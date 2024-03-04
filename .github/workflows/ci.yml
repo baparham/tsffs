@@ -12,7 +12,7 @@ env:
   PUBLIC_SIMICS_PACKAGE_VERSION_1000: "1.8.3"
 
 jobs:
-  build_windows:
+  build_windows_pwsh:
     name: Build and Test (Windows)
     runs-on: windows-latest
     steps:
@@ -24,14 +24,37 @@ jobs:
           "$PATH" | Out-File -FilePath $env:GITHUB_PATH -Append
           echo "Current PATH: " $env:GITHUB_PATH
 
-      - name: Cache SIMICS
-        id: cache-simics-packages-windows
-        uses: actions/cache@v3
-        with:
-          path: |
-            C:\ISPM\
-            C:\SIMICS\
-          key: simics-windows-${{ env.PUBLIC_SIMICS_PACKAGE_VERSION_1000 }}
+      # ispm-installer.exe is a NSIS installer for the elctron build. We want the
+      # default options, so we pass /S to install silently:
+      # https://nsis.sourceforge.io/Docs/Chapter3.html#installerusage
+      #
+      # NOTE: We use | Out-Null on the installer command to make powershell wait for it
+      # to actually finish instead of forking it to the background
+      - name: Download and Install ISPM
+        shell: pwsh
+        run: |
+          echo downloading
+          Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -OutFile C:\ispm-installer.exe
+          echo downloaded
+          echo installing
+          C:\ispm-installer.exe /S /D='C:\ISPM\' | Out-Null
+          echo done
+
+      - name: Set SIMICS Install Directory
+        run: |
+          ispm.exe settings install-dir C:\SIMICS\
+
+  build_windows_powershell:
+    name: Build and Test (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Add ISPM and MinGW to PATH
+        run: |
+          set PATH $env:PATH
+          "C:\MinGW\bin" | Out-File -FilePath $env:GITHUB_PATH
+          "C:\ISPM\" | Out-File -FilePath $env:GITHUB_PATH -Append
+          "$PATH" | Out-File -FilePath $env:GITHUB_PATH -Append
+          echo "Current PATH: " $env:GITHUB_PATH
 
       # ispm-installer.exe is a NSIS installer for the elctron build. We want the
       # default options, so we pass /S to install silently:
@@ -40,13 +63,49 @@ jobs:
       # NOTE: We use | Out-Null on the installer command to make powershell wait for it
       # to actually finish instead of forking it to the background
       - name: Download and Install ISPM
-        if: ${{ steps.cache-simics-packages-windows.outputs.cache-hit != 'true' }}
+        shell: powershell
         run: |
           echo downloading
           Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -OutFile C:\ispm-installer.exe
           echo downloaded
           echo installing
           C:\ispm-installer.exe /S /D='C:\ISPM\' | Out-Null
+          echo done
+
+      - name: Set SIMICS Install Directory
+        run: |
+          ispm.exe settings install-dir C:\SIMICS\
+
+
+  build_windows_cmd:
+    name: Build and Test (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Add ISPM and MinGW to PATH
+        run: |
+          set PATH $env:PATH
+          "C:\MinGW\bin" | Out-File -FilePath $env:GITHUB_PATH
+          "C:\ISPM\" | Out-File -FilePath $env:GITHUB_PATH -Append
+          "$PATH" | Out-File -FilePath $env:GITHUB_PATH -Append
+          echo "Current PATH: " $env:GITHUB_PATH
+
+      # ispm-installer.exe is a NSIS installer for the elctron build. We want the
+      # default options, so we pass /S to install silently:
+      # https://nsis.sourceforge.io/Docs/Chapter3.html#installerusage
+      #
+      # NOTE: We use | Out-Null on the installer command to make powershell wait for it
+      # to actually finish instead of forking it to the background
+      - name: Download and Install ISPM
+        run: |
+          echo downloading
+          Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -OutFile C:\ispm-installer.exe
+          echo downloaded
+
+      - name: install ispm
+        shell: cmd
+        run: |
+          echo installing
+          start /wait C:\ispm-installer.exe /S /D='C:\ISPM\' && echo finished
           echo done
 
       - name: Set SIMICS Install Directory
