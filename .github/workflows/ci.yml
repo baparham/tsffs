@@ -79,6 +79,7 @@ jobs:
           Procmon.exe /AcceptEula /PagingFile /NoConnect /Minimized /Quiet
           Procmon.exe /AcceptEula /WaitForIdle
           Procmon.exe /AcceptEula /Terminate
+          sleep 60
 
       - name: save procmon log
         if: ${{ always() }}
