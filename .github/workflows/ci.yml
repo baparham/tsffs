@@ -21,8 +21,25 @@ jobs:
           set PATH $env:PATH
           "C:\MinGW\bin" | Out-File -FilePath $env:GITHUB_PATH
           "C:\ISPM\" | Out-File -FilePath $env:GITHUB_PATH -Append
+          "C:\procmon\" | Out-File -FilePath $env:GITHUB_PATH -Append
           "$PATH" | Out-File -FilePath $env:GITHUB_PATH -Append
           echo "Current PATH: " $env:GITHUB_PATH
+
+      - name: download procmon and accept eula
+        run: |
+          Invoke-WebRequest -URI https://download.sysinternals.com/files/ProcessMonitor.zip -OutFile ProcMon.zip
+          Expand-Archive -Path "C:\ProcMon.zip" -DestinationPath "C:\procmon"
+          $procMonPath = "HKCU:\Software\Sysinternals\Process Monitor"
+          $eulaValue = Get-ItemProperty -Path $procMonPath -Name "EulaAccepted" -ErrorAction SilentlyContinue
+          if ($null -eq $eulaValue) {
+              New-Item -Path $procMonPath -Force | Out-Null
+              New-ItemProperty -Path $procMonPath -Name "EulaAccepted" -Value 1 -PropertyType "DWord" | Out-Null
+          } else {
+              Set-ItemProperty -Path $procMonPath -Name "EulaAccepted" -Value 1
+          }
+
+      - name: start procmon capture
+        run: Procmon.exe /Minimized /Quiet /BackingFile log.pml
 
       # ispm-installer.exe is a NSIS installer for the elctron build. We want the
       # default options, so we pass /S to install silently:
@@ -43,6 +60,17 @@ jobs:
       - name: Set SIMICS Install Directory
         run: |
           ispm.exe settings install-dir C:\SIMICS\
+
+      - name: kill procmon
+        if: ${{ always() }}
+        run: taskkill /IM Procmon.exe /F
+
+      - name: save procmon log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: procmon-log
+          path: log.pml
 
   build_windows_powershell:
     name: Build and Test (Windows)
@@ -75,38 +103,6 @@ jobs:
       - name: Set SIMICS Install Directory
         run: |
           ispm.exe settings install-dir C:\SIMICS\
-
-
-  build_windows_cmd:
-    name: Build and Test (Windows)
-    runs-on: windows-latest
-    steps:
-      - name: Add ISPM and MinGW to PATH
-        run: |
-          set PATH $env:PATH
-          "C:\MinGW\bin" | Out-File -FilePath $env:GITHUB_PATH
-          "C:\ISPM\" | Out-File -FilePath $env:GITHUB_PATH -Append
-          "$PATH" | Out-File -FilePath $env:GITHUB_PATH -Append
-          echo "Current PATH: " $env:GITHUB_PATH
-
-      # ispm-installer.exe is a NSIS installer for the elctron build. We want the
-      # default options, so we pass /S to install silently:
-      # https://nsis.sourceforge.io/Docs/Chapter3.html#installerusage
-      #
-      # NOTE: We use | Out-Null on the installer command to make powershell wait for it
-      # to actually finish instead of forking it to the background
-      - name: Download and Install ISPM
-        run: |
-          echo downloading
-          Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -OutFile C:\ispm-installer.exe
-          echo downloaded
-
-      - name: install ispm
-        shell: cmd
-        run: |
-          echo installing
-          start /wait C:\ispm-installer.exe /S /D='C:\ISPM\' && echo finished
-          echo done
 
       - name: Set SIMICS Install Directory
         run: |
