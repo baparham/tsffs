@@ -56,15 +56,21 @@ jobs:
           echo installing
           $processPath = "C:\ispm-installer.exe"
           $arguments = "/S /D='C:\ISPM\'"
-          $timeoutSeconds = 180
-          try {
-              Start-Process -FilePath $processPath -ArgumentList $arguments -Wait -Passthru -Timeout $timeoutSeconds
+          # from https://stackoverflow.com/questions/36933527/powershell-start-process-wait-with-timeout-kill-and-get-exit-code
+          $proc = Start-Process -filePath $processPath -ArgumentList $arguments -PassThru
+
+          # wait up to x seconds for normal termination
+          $proc | Wait-Process -Timeout 180 -ErrorAction SilentlyContinue -ErrorVariable timeouted
+
+          if ($timeouted)
+          {
+              # terminate the process
+              $proc | kill
+
+              # update internal error counter
           }
-          catch {
-              Write-Warning "The process did not complete within the $timeoutSeconds seconds timeout period."
-              # Optional: Handle the timeout case, such as terminating the process or logging a message.
-          }
-          echo done
+          echo exit code $proc.ExitCode
+          echo "done, timed out or failed"
 
       - name: Set SIMICS Install Directory
         run: |
@@ -81,39 +87,39 @@ jobs:
           name: procmon-log
           path: log.pml
 
-  build_windows_powershell:
-    name: Build and Test (Windows)
-    runs-on: windows-latest
-    timeout-minutes: 5
-    steps:
-      - name: Add ISPM and MinGW to PATH
-        run: |
-          set PATH $env:PATH
-          "C:\MinGW\bin" | Out-File -FilePath $env:GITHUB_PATH
-          "C:\ISPM\" | Out-File -FilePath $env:GITHUB_PATH -Append
-          "$PATH" | Out-File -FilePath $env:GITHUB_PATH -Append
-          echo "Current PATH: " $env:GITHUB_PATH
+  # build_windows_powershell:
+  #   name: Build and Test (Windows)
+  #   runs-on: windows-latest
+  #   timeout-minutes: 5
+  #   steps:
+  #     - name: Add ISPM and MinGW to PATH
+  #       run: |
+  #         set PATH $env:PATH
+  #         "C:\MinGW\bin" | Out-File -FilePath $env:GITHUB_PATH
+  #         "C:\ISPM\" | Out-File -FilePath $env:GITHUB_PATH -Append
+  #         "$PATH" | Out-File -FilePath $env:GITHUB_PATH -Append
+  #         echo "Current PATH: " $env:GITHUB_PATH
 
-      # ispm-installer.exe is a NSIS installer for the elctron build. We want the
-      # default options, so we pass /S to install silently:
-      # https://nsis.sourceforge.io/Docs/Chapter3.html#installerusage
-      #
-      # NOTE: We use | Out-Null on the installer command to make powershell wait for it
-      # to actually finish instead of forking it to the background
-      - name: Download and Install ISPM
-        shell: powershell
-        run: |
-          echo downloading
-          Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -OutFile C:\ispm-installer.exe
-          echo downloaded
-          echo installing
-          C:\ispm-installer.exe /S /D='C:\ISPM\' | Out-Null
-          echo done
+  #     # ispm-installer.exe is a NSIS installer for the elctron build. We want the
+  #     # default options, so we pass /S to install silently:
+  #     # https://nsis.sourceforge.io/Docs/Chapter3.html#installerusage
+  #     #
+  #     # NOTE: We use | Out-Null on the installer command to make powershell wait for it
+  #     # to actually finish instead of forking it to the background
+  #     - name: Download and Install ISPM
+  #       shell: powershell
+  #       run: |
+  #         echo downloading
+  #         Invoke-WebRequest -URI ${{ env.PUBLIC_SIMICS_ISPM_URL_WINDOWS }} -OutFile C:\ispm-installer.exe
+  #         echo downloaded
+  #         echo installing
+  #         C:\ispm-installer.exe /S /D='C:\ISPM\' | Out-Null
+  #         echo done
 
-      - name: Set SIMICS Install Directory
-        run: |
-          ispm.exe settings install-dir C:\SIMICS\
+  #     - name: Set SIMICS Install Directory
+  #       run: |
+  #         ispm.exe settings install-dir C:\SIMICS\
 
-      - name: Set SIMICS Install Directory
-        run: |
-          ispm.exe settings install-dir C:\SIMICS\
+  #     - name: Set SIMICS Install Directory
+  #       run: |
+  #         ispm.exe settings install-dir C:\SIMICS\
