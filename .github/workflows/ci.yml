@@ -51,7 +51,7 @@ jobs:
           Procmon.exe /AcceptEula /WaitForIdle
           echo installing
           $processPath = "C:\ispm-installer.exe"
-          $arguments = "/S /D='C:\ISPM\'"
+          $arguments = "/S /D=C:\ISPM"
           # from https://stackoverflow.com/questions/36933527/powershell-start-process-wait-with-timeout-kill-and-get-exit-code
           $proc = Start-Process -filePath $processPath -ArgumentList $arguments -PassThru
 
